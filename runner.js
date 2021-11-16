@@ -1,9 +1,13 @@
 (() =>
 {
-	let feed_model = [];
+	let feed = {
+		model: [],
+		weights: [],
+		currwaet: undefined,
+	};
 	function ModellizeFeed(container__selector)
 	{
-		feed_model.length = 0;
+		feed.length = 0;
 		const instances__container = $(container__selector)[0];
 		const grid__insts_sdmarg = parseInt(window.getComputedStyle(instances__container.children[0])["marginLeft"]) * 2,
 			grid__body_wdt = instances__container.scrollWidth,
@@ -36,7 +40,13 @@
 			mapped_grid[currrow__index][k][2] = currrow__width + currrow__sidefiller_left - mapped_grid[currrow__index][k][1] + (grid__insts_sdmarg);
 			mapped_grid[currrow__index][k][1] = currrow__width + currrow__sidefiller_left;
 		}
-		feed_model = mapped_grid;
+		feed.model = mapped_grid;
+
+		const weights__wdt = grid__body_wdt / 50;
+		let weights__total = 0;
+		for (i = 0; i < 50; i++)
+			feed.weights[i] = parseInt((weights__total += weights__wdt) - (weights__wdt * .50));
+
 		return true;
 	};
 	const box_insts__count = Math.floor(Math.random() * (30 - 1) + 1);
@@ -88,14 +98,14 @@
 							behavior: "smooth",
 							block: "center",
 						});
+						feed.currwaet = 0;
 						return;
 					}
 					const targetBoxIndex = targetBox.index();
 					// get the information about the grid through the model created by modelizeFeed()
 					const grid = (function ()
 					{
-						const mappedGrid = feed_model;
-						const mappedGrid__length = mappedGrid.length;
+						const mappedGrid = feed.model, mappedGrid__length = feed.model.length;
 						let x, y;
 						for (y = 0; y < mappedGrid__length; y++)
 						{
@@ -105,6 +115,24 @@
 								for (x = 0; x < mappedRow__length; x++)
 									if (targetBoxIndex == mappedRow[x][0])
 										break;
+
+								if (targetBox.is(":hover"))
+								{
+									let k, j, holder_f_a;
+									const mappedWeights = [...feed.weights], mappedWeights__length = feed.weights.length;
+									for (k = 0; k < mappedWeights__length; k++)
+										mappedWeights[k] = [k, Math.abs((mappedRow[x][1] - ((mappedRow[x][1] - mappedRow[x][2]) * .50)) - mappedWeights[k])];
+									for (k = 0; k < mappedWeights__length; k++)
+										for (j = k + 1; j < mappedWeights__length; j++)
+											if (mappedWeights[k][1] > mappedWeights[j][1])
+											{
+												holder_f_a = mappedWeights[k];
+												mappedWeights[k] = mappedWeights[j];
+												mappedWeights[j] = holder_f_a;
+											}
+									feed.currwaet = mappedWeights[0][0];
+								}
+
 								return {
 									model: mappedGrid,
 									rowcount: mappedGrid__length - 1,
@@ -129,72 +157,52 @@
 							else
 								nextPOS[0] = grid.currPOS[0] - 1;
 
-						const nextrow__colcount = grid.model[nextPOS[0]].length;
-						const currpos_xtrm_wdt__start = grid.currPOS[2] - (targetBox[0].offsetWidth * .75),
-							currpos_xtrm_wdt__mid = grid.currPOS[2] - (targetBox[0].offsetWidth * .50),
-							currpos_xtrm_wdt__end = grid.currPOS[2] - (targetBox[0].offsetWidth * .25),
+						const nextrow__colcount = grid.model[nextPOS[0]].length,
 							row_sample__r = [],
-							row_sample__l = [];
-						let i, k, handler_f_a;
+							row_sample__l = [],
+							row_sample__c = [];
+						let i, j, k, holder_f_a;
+
 						for (i = 0; i < nextrow__colcount; i++)
-							if (grid.model[nextPOS[0]][i][1] > currpos_xtrm_wdt__start)
-							{
-								row_sample__l.push([...grid.model[nextPOS[0]][i]]);
-								row_sample__r.push([...grid.model[nextPOS[0]][i]]);
-								i++;
-								break;
-							}
-						for (i; i < nextrow__colcount; i++)
 						{
-							if ((grid.model[nextPOS[0]][i][2]) < currpos_xtrm_wdt__end)
-							{
-								row_sample__l.push([...grid.model[nextPOS[0]][i]]);
-								row_sample__r.push([...grid.model[nextPOS[0]][i]]);
-							}
+							row_sample__c[i] = [grid.model[nextPOS[0]][i][0], Math.abs((grid.model[nextPOS[0]][i][1] - ((grid.model[nextPOS[0]][i][1] - grid.model[nextPOS[0]][i][2]) * .50)) - feed.weights[feed.currwaet])];
+							row_sample__l[i] = [grid.model[nextPOS[0]][i][0], Math.abs(grid.model[nextPOS[0]][i][2] - feed.weights[feed.currwaet])];
+							row_sample__r[i] = [grid.model[nextPOS[0]][i][0], Math.abs(grid.model[nextPOS[0]][i][1] - feed.weights[feed.currwaet])];
 						}
 
-						if (!row_sample__r.length)
-						{
-							row_sample__l.push([...grid.model[nextPOS[0]][nextrow__colcount - 1]]);
-							row_sample__r.push([...grid.model[nextPOS[0]][nextrow__colcount - 1]]);
-						}
-						else
-						{
-							const rowsample__colcount = row_sample__r.length, side_margins__l = parseInt(window.getComputedStyle(targetBox[0])["marginLeft"]), side_margins__r = parseInt(window.getComputedStyle(targetBox[0])["marginRight"]);
-
-							for (i = 0; i < rowsample__colcount; i++)
+						for (i = 0; i < nextrow__colcount; i++)
+							for (j = i + 1; j < nextrow__colcount; j++)
 							{
-								row_sample__l[i][2] = Math.abs(row_sample__l[i][2] - currpos_xtrm_wdt__mid + side_margins__l);
-								row_sample__r[i][1] = Math.abs(row_sample__r[i][1] - currpos_xtrm_wdt__mid - side_margins__r);
-							}
-
-							for (i = 0; i < rowsample__colcount; i++)
-							{
-								k = i + 1;
-								for (k; k < rowsample__colcount; k++)
+								if (row_sample__c[i][1] > row_sample__c[j][1])
 								{
-									if (row_sample__r[i][1] > row_sample__r[k][1])
-									{
-										handler_f_a = row_sample__r[i];
-										row_sample__r[i] = row_sample__r[k];
-										row_sample__r[k] = handler_f_a;
-									}
-									if (row_sample__l[i][2] > row_sample__l[k][2])
-									{
-										handler_f_a = row_sample__l[i];
-										row_sample__l[i] = row_sample__l[k];
-										row_sample__l[k] = handler_f_a;
-									}
+									holder_f_a = row_sample__c[i];
+									row_sample__c[i] = row_sample__c[j];
+									row_sample__c[j] = holder_f_a;
+								}
+								if (row_sample__l[i][1] > row_sample__l[j][1])
+								{
+									holder_f_a = row_sample__l[i];
+									row_sample__l[i] = row_sample__l[j];
+									row_sample__l[j] = holder_f_a;
+								}
+								if (row_sample__r[i][1] > row_sample__r[j][1])
+								{
+									holder_f_a = row_sample__r[i];
+									row_sample__r[i] = row_sample__r[j];
+									row_sample__r[j] = holder_f_a;
 								}
 							}
 
-						}
-
-						if (row_sample__l[0][2] < row_sample__r[0][1])
-							nextIndex = row_sample__l[0][0];
+						if (row_sample__l[0][1] < row_sample__r[0][1])
+							if (row_sample__l[0][1] < 12)
+								nextIndex = row_sample__c[0][0];
+							else
+								nextIndex = row_sample__l[0][0];
 						else
-							nextIndex = row_sample__r[0][0];
-
+							if (row_sample__r[0][1] < 12)
+								nextIndex = row_sample__c[0][0];
+							else
+								nextIndex = row_sample__r[0][0];
 					}
 					else
 					{
@@ -209,6 +217,26 @@
 								[grid.model[grid.currPOS[0]].length - 1][0];
 							else
 								nextIndex = grid.model[grid.currPOS[0]][grid.currPOS[1] - 1][0];
+
+						const mappedRow = feed.model[grid.currPOS[0]], mappedRow__length = feed.model[grid.currPOS[0]].length, mappedWeights = [...feed.weights], mappedWeights__length = feed.weights.length;
+
+						let x, k, j, holder_f_a;
+						for (x = 0; x < mappedRow__length; x++)
+							if (nextIndex == mappedRow[x][0])
+								break;
+						for (k = 0; k < mappedWeights__length; k++)
+							mappedWeights[k] = [k, Math.abs((mappedRow[x][1] - ((mappedRow[x][1] - mappedRow[x][2]) * .50)) - mappedWeights[k])];
+
+						for (k = 0; k < mappedWeights__length; k++)
+							for (j = k + 1; j < mappedWeights__length; j++)
+								if (mappedWeights[k][1] > mappedWeights[j][1])
+								{
+									holder_f_a = mappedWeights[k];
+									mappedWeights[k] = mappedWeights[j];
+									mappedWeights[j] = holder_f_a;
+								}
+
+						feed.currwaet = mappedWeights[0][0];
 					}
 					const new_targetBox = targetBoxContainer.find(`.box-insts:nth-child(${nextIndex + 1})`).attr('pointed', 'true')[0];
 					new_targetBox.scrollIntoView({

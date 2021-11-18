@@ -5,6 +5,7 @@
 		weights: [],
 		currwaet: undefined,
 	};
+	window.feed = feed;
 	function ModellizeFeed(container__selector)
 	{
 		feed.length = 0;
@@ -78,10 +79,10 @@
 	{
 		switch (event.keyCode)
 		{
-			case 74:
-			case 75:
-			case 76:
-			case 72:
+			case 40:
+			case 38:
+			case 39:
+			case 37:
 				{
 					let targetBox = $('.box-insts[pointed="true"]'), targetBoxContainer;
 					if (targetBox.length || (targetBox = $(".box-insts:hover")).length)
@@ -143,10 +144,10 @@
 					})();
 					let nextPOS = [];
 					let nextIndex = 0;
-					if (event.keyCode == 74 || event.keyCode == 75) // determine if navigation is vertical or not. if this is true, then navigation is vertical;
+					if (event.keyCode == 40 || event.keyCode == 38) // determine if navigation is vertical or not. if this is true, then navigation is vertical;
 					{
 						// plot the next row location
-						if (event.keyCode == 74)
+						if (event.keyCode == 40)
 							if (grid.currPOS[0] + 1 > grid.rowcount)
 								nextPOS[0] = 0;
 							else
@@ -165,27 +166,27 @@
 
 						for (i = 0; i < nextrow__colcount; i++)
 						{
-							row_sample__c[i] = [grid.model[nextPOS[0]][i][0], Math.abs((grid.model[nextPOS[0]][i][1] - ((grid.model[nextPOS[0]][i][1] - grid.model[nextPOS[0]][i][2]) * .50)) - feed.weights[feed.currwaet])];
-							row_sample__l[i] = [grid.model[nextPOS[0]][i][0], Math.abs(grid.model[nextPOS[0]][i][2] - feed.weights[feed.currwaet])];
-							row_sample__r[i] = [grid.model[nextPOS[0]][i][0], Math.abs(grid.model[nextPOS[0]][i][1] - feed.weights[feed.currwaet])];
+							row_sample__c[i] = [grid.model[nextPOS[0]][i][0], (grid.model[nextPOS[0]][i][1] - ((grid.model[nextPOS[0]][i][1] - grid.model[nextPOS[0]][i][2]) * .50) - feed.weights[feed.currwaet])];
+							row_sample__l[i] = [grid.model[nextPOS[0]][i][0], (grid.model[nextPOS[0]][i][2] - feed.weights[feed.currwaet])];
+							row_sample__r[i] = [grid.model[nextPOS[0]][i][0], (grid.model[nextPOS[0]][i][1] - feed.weights[feed.currwaet])];
 						}
 
 						for (i = 0; i < nextrow__colcount; i++)
 							for (j = i + 1; j < nextrow__colcount; j++)
 							{
-								if (row_sample__c[i][1] > row_sample__c[j][1])
+								if (Math.abs(row_sample__c[i][1]) > Math.abs(row_sample__c[j][1]))
 								{
 									holder_f_a = row_sample__c[i];
 									row_sample__c[i] = row_sample__c[j];
 									row_sample__c[j] = holder_f_a;
 								}
-								if (row_sample__l[i][1] > row_sample__l[j][1])
+								if (Math.abs(row_sample__l[i][1]) > Math.abs(row_sample__l[j][1]))
 								{
 									holder_f_a = row_sample__l[i];
 									row_sample__l[i] = row_sample__l[j];
 									row_sample__l[j] = holder_f_a;
 								}
-								if (row_sample__r[i][1] > row_sample__r[j][1])
+								if (Math.abs(row_sample__r[i][1]) > Math.abs(row_sample__r[j][1]))
 								{
 									holder_f_a = row_sample__r[i];
 									row_sample__r[i] = row_sample__r[j];
@@ -193,20 +194,20 @@
 								}
 							}
 
-						if (row_sample__l[0][1] < row_sample__r[0][1])
-							if (row_sample__l[0][1] < 12)
+						if (Math.abs(row_sample__l[0][1]) < Math.abs(row_sample__r[0][1]))
+							if (row_sample__l[0][1] > -40)
 								nextIndex = row_sample__c[0][0];
 							else
 								nextIndex = row_sample__l[0][0];
 						else
-							if (row_sample__r[0][1] < 12)
+							if (row_sample__r[0][1] < 40)
 								nextIndex = row_sample__c[0][0];
 							else
 								nextIndex = row_sample__r[0][0];
 					}
 					else
 					{
-						if (event.keyCode == 76)
+						if (event.keyCode == 39)
 							if (grid.currPOS[1] + 2 > grid.model[grid.currPOS[0]].length)
 								nextIndex = grid.model[grid.currPOS[0]][0][0];
 							else
